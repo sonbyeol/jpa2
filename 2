@@ -1,0 +1,82 @@
+import java.util.List;
+import java.util.UUID;
+import javax.persistence.*;
+import java.util.ArrayList;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.data.jpa.repository.JpaRepository;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+// DTO Class
+@Data
+@NoArgsConstructor
+public class UcubeAdapterDTO {
+    private UUID id;
+    private UUID adapterId;
+    private String adapterName;
+    private List<UCubeInterfaceDTO> interfaces;
+}
+
+// Entity Class
+@Entity
+@Data
+@NoArgsConstructor
+public class UcubeAdapter {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
+    private UUID adapterId;
+    private String adapterName;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "adapter_id")
+    private List<UCubeInterface> interfaces = new ArrayList<>();
+}
+
+// Interface DTO Class
+@Data
+@NoArgsConstructor
+public class UCubeInterfaceDTO {
+    private UUID id;
+    private String name;
+}
+
+// Interface Entity Class
+@Entity
+@Data
+@NoArgsConstructor
+public class UCubeInterface {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
+    private String name;
+}
+
+// Repository interface
+public interface UcubeAdapterRepository extends JpaRepository<UcubeAdapter, UUID> {
+}
+
+// UCubeAdapterService class with the doSave method
+@Service
+public class UCubeAdapterService {
+
+    @Autowired
+    private UcubeAdapterRepository ucubeAdapterRepository;
+
+    public UcubeAdapter doSave(UcubeAdapterDTO dto) {
+        UcubeAdapter adapter = new UcubeAdapter();
+        adapter.setAdapterId(dto.getAdapterId());
+        adapter.setAdapterName(dto.getAdapterName());
+
+        List<UCubeInterface> interfaces = new ArrayList<>();
+        for (UCubeInterfaceDTO interfaceDTO : dto.getInterfaces()) {
+            UCubeInterface iface = new UCubeInterface();
+            iface.setName(interfaceDTO.getName());
+            interfaces.add(iface);
+        }
+        adapter.setInterfaces(interfaces);
+
+        return ucubeAdapterRepository.save(adapter);
+    }
+}

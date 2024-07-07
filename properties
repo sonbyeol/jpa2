@@ -1,0 +1,85 @@
+import java.util.List;
+import java.util.UUID;
+import javax.persistence.*;
+import java.util.ArrayList;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.data.jpa.repository.JpaRepository;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+// UCubePropertyDTO Class
+@Data
+@NoArgsConstructor
+public class UCubePropertyDTO {
+    private UUID id;
+    private String propertyName;
+    private String propertyValue;
+}
+
+// UCubeProperty Entity Class
+@Entity
+@Data
+@NoArgsConstructor
+public class UCubeProperty {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
+    private String propertyName;
+    private String propertyValue;
+}
+
+// UCubeInterfaceDTO Class
+@Data
+@NoArgsConstructor
+public class UCubeInterfaceDTO {
+    private UUID id;
+    private UUID adapterId;
+    private String name;
+    private List<UCubePropertyDTO> properties;
+}
+
+// UCubeInterface Entity Class
+@Entity
+@Data
+@NoArgsConstructor
+public class UCubeInterface {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
+    private UUID adapterId;
+    private String name;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "adapter_id")
+    private List<UCubeProperty> properties = new ArrayList<>();
+}
+
+// Repository interface
+public interface UCubeInterfaceRepository extends JpaRepository<UCubeInterface, UUID> {
+}
+
+// UCubeInterfaceService class with the doSave method
+@Service
+public class UCubeInterfaceService {
+
+    @Autowired
+    private UCubeInterfaceRepository ucubeInterfaceRepository;
+
+    public UCubeInterface doSave(UCubeInterfaceDTO dto) {
+        UCubeInterface ucubeInterface = new UCubeInterface();
+        ucubeInterface.setAdapterId(dto.getAdapterId());
+        ucubeInterface.setName(dto.getName());
+
+        List<UCubeProperty> properties = new ArrayList<>();
+        for (UCubePropertyDTO propertyDTO : dto.getProperties()) {
+            UCubeProperty property = new UCubeProperty();
+            property.setPropertyName(propertyDTO.getPropertyName());
+            property.setPropertyValue(propertyDTO.getPropertyValue());
+            properties.add(property);
+        }
+        ucubeInterface.setProperties(properties);
+
+        return ucubeInterfaceRepository.save(ucubeInterface);
+    }
+}

@@ -1,0 +1,112 @@
+삭제
+import java.util.List;
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UCubeInterfaceRepository extends JpaRepository<UCubeInterface, UUID> {
+    List<UCubeInterface> findByAdapterId(UUID adapterId);
+    boolean existsByAdapterId(UUID adapterId);
+}
+
+public interface UCubePropertyRepository extends JpaRepository<UCubeProperty, UUID> {
+    List<UCubeProperty> findByInterfaceId(UUID interfaceId);
+    boolean existsByInterfaceId(UUID interfaceId);
+}
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class UCubeAdapterService {
+
+    @Autowired
+    private UcubeAdapterRepository ucubeAdapterRepository;
+
+    @Autowired
+    private UCubeInterfaceRepository ucubeInterfaceRepository;
+
+    @Transactional
+    public UcubeAdapter doSave(UcubeAdapterDTO dto) {
+        UcubeAdapter adapter = new UcubeAdapter();
+        adapter.setAdapterId(dto.getAdapterId());
+        adapter.setAdapterName(dto.getAdapterName());
+
+        // Retrieve the associated interfaces from the database
+        List<UCubeInterface> interfaces = ucubeInterfaceRepository.findByAdapterId(dto.getAdapterId());
+        adapter.setInterfaces(interfaces);
+
+        return ucubeAdapterRepository.save(adapter);
+    }
+
+    @Transactional
+    public void deleteAdapter(UUID adapterId) {
+        if (ucubeInterfaceRepository.existsByAdapterId(adapterId)) {
+            throw new IllegalStateException("Cannot delete adapter because it has associated interfaces.");
+        }
+        ucubeAdapterRepository.deleteById(adapterId);
+    }
+}
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class UCubeInterfaceService {
+
+    @Autowired
+    private UCubeInterfaceRepository ucubeInterfaceRepository;
+
+    @Autowired
+    private UCubePropertyRepository ucubePropertyRepository;
+
+    @Transactional
+    public UCubeInterface doSave(UCubeInterfaceDTO dto) {
+        UCubeInterface iface = new UCubeInterface();
+        iface.setAdapterId(dto.getAdapterId());
+        iface.setName(dto.getName());
+
+        // Retrieve the associated properties from the database
+        List<UCubeProperty> properties = ucubePropertyRepository.findByInterfaceId(dto.getId());
+        iface.setProperties(properties);
+
+        return ucubeInterfaceRepository.save(iface);
+    }
+
+    @Transactional
+    public void deleteInterface(UUID interfaceId) {
+        if (ucubePropertyRepository.existsByInterfaceId(interfaceId)) {
+            throw new IllegalStateException("Cannot delete interface because it has associated properties.");
+        }
+        ucubeInterfaceRepository.deleteById(interfaceId);
+    }
+}
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public String handleIllegalStateException(IllegalStateException ex) {
+        return ex.getMessage();
+    }
+}
+
+fetch(`http://your.api.url/adapters/${props.id}`, { method: 'DELETE' })
+                            .then(response => {
+                                if (!response.ok) throw new Error(response.statusText);
+                                return response.json();
+                            })
+                            .then(() => {
+                                notify('Adapter deleted');
+                                refresh();
+                            })
+                            .catch(error => {
+                                notify(error.message, { type: 'error' });
+                            });

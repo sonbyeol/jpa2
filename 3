@@ -1,0 +1,126 @@
+import java.util.List;
+import java.util.UUID;
+import javax.persistence.*;
+import java.util.ArrayList;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.data.jpa.repository.JpaRepository;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+// UCubePropertyDTO Class
+@Data
+@NoArgsConstructor
+public class UCubePropertyDTO {
+    private UUID id;
+    private UUID adapterId;
+    private UUID interfaceId;
+    private String propertyName;
+    private String propertyValue;
+}
+
+// UCubeProperty Entity Class
+@Entity
+@Data
+@NoArgsConstructor
+public class UCubeProperty {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
+    private UUID adapterId;
+    private UUID interfaceId;
+    private String propertyName;
+    private String propertyValue;
+}
+
+// UCubeInterfaceDTO Class
+@Data
+@NoArgsConstructor
+public class UCubeInterfaceDTO {
+    private UUID id;
+    private UUID adapterId;
+    private String name;
+    private List<UCubePropertyDTO> properties;
+}
+
+// UCubeInterface Entity Class
+@Entity
+@Data
+@NoArgsConstructor
+public class UCubeInterface {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
+    private UUID adapterId;
+    private String name;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "interface_id")
+    private List<UCubeProperty> properties = new ArrayList<>();
+}
+
+// UcubeAdapterDTO Class
+@Data
+@NoArgsConstructor
+public class UcubeAdapterDTO {
+    private UUID id;
+    private UUID adapterId;
+    private String adapterName;
+    private List<UCubeInterfaceDTO> interfaces;
+}
+
+// UcubeAdapter Entity Class
+@Entity
+@Data
+@NoArgsConstructor
+public class UcubeAdapter {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
+    private UUID adapterId;
+    private String adapterName;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "adapter_id")
+    private List<UCubeInterface> interfaces = new ArrayList<>();
+}
+
+// Repository interface for UcubeAdapter
+public interface UcubeAdapterRepository extends JpaRepository<UcubeAdapter, UUID> {
+}
+
+// UCubeAdapterService class with the doSave method
+@Service
+public class UCubeAdapterService {
+
+    @Autowired
+    private UcubeAdapterRepository ucubeAdapterRepository;
+
+    public UcubeAdapter doSave(UcubeAdapterDTO dto) {
+        UcubeAdapter adapter = new UcubeAdapter();
+        adapter.setAdapterId(dto.getAdapterId());
+        adapter.setAdapterName(dto.getAdapterName());
+
+        List<UCubeInterface> interfaces = new ArrayList<>();
+        for (UCubeInterfaceDTO interfaceDTO : dto.getInterfaces()) {
+            UCubeInterface iface = new UCubeInterface();
+            iface.setAdapterId(interfaceDTO.getAdapterId());
+            iface.setName(interfaceDTO.getName());
+
+            List<UCubeProperty> properties = new ArrayList<>();
+            for (UCubePropertyDTO propertyDTO : interfaceDTO.getProperties()) {
+                UCubeProperty property = new UCubeProperty();
+                property.setAdapterId(propertyDTO.getAdapterId());
+                property.setInterfaceId(propertyDTO.getInterfaceId());
+                property.setPropertyName(propertyDTO.getPropertyName());
+                property.setPropertyValue(propertyDTO.getPropertyValue());
+                properties.add(property);
+            }
+            iface.setProperties(properties);
+            interfaces.add(iface);
+        }
+        adapter.setInterfaces(interfaces);
+
+        return ucubeAdapterRepository.save(adapter);
+    }
+}

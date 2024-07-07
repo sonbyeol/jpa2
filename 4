@@ -122,3 +122,62 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface UCubeInterfaceRepository extends JpaRepository<UCubeInterface, UUID> {
     List<UCubeInterface> findByAdapterId(UUID adapterId);
 }
+
+// UCubeInterfaceService class with the doSave method
+@Service
+public class UCubeInterfaceService {
+
+    @Autowired
+    private UCubeInterfaceRepository ucubeInterfaceRepository;
+
+    public UCubeInterface doSave(UCubeInterfaceDTO dto) {
+        UCubeInterface iface = new UCubeInterface();
+        iface.setAdapterId(dto.getAdapterId());
+        iface.setName(dto.getName());
+
+        List<UCubeProperty> properties = new ArrayList<>();
+        for (UCubePropertyDTO propertyDTO : dto.getProperties()) {
+            UCubeProperty property = new UCubeProperty();
+            property.setAdapterId(propertyDTO.getAdapterId());
+            property.setInterfaceId(propertyDTO.getInterfaceId());
+            property.setPropertyName(propertyDTO.getPropertyName());
+            property.setPropertyValue(propertyDTO.getPropertyValue());
+            properties.add(property);
+        }
+        iface.setProperties(properties);
+
+        return ucubeInterfaceRepository.save(iface);
+    }
+}
+
+
+
+
+
+-----------
+public interface UCubePropertyRepository extends JpaRepository<UCubeProperty, UUID> {
+    List<UCubeProperty> findByInterfaceId(UUID interfaceId);
+}
+
+// UCubeInterfaceService class with the doSave method
+@Service
+public class UCubeInterfaceService {
+
+    @Autowired
+    private UCubeInterfaceRepository ucubeInterfaceRepository;
+
+    @Autowired
+    private UCubePropertyRepository ucubePropertyRepository;
+
+    public UCubeInterface doSave(UCubeInterfaceDTO dto) {
+        UCubeInterface iface = new UCubeInterface();
+        iface.setAdapterId(dto.getAdapterId());
+        iface.setName(dto.getName());
+
+        // Retrieve the associated properties from the database
+        List<UCubeProperty> properties = ucubePropertyRepository.findByInterfaceId(dto.getId());
+        iface.setProperties(properties);
+
+        return ucubeInterfaceRepository.save(iface);
+    }
+}
